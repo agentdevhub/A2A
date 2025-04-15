@@ -1,26 +1,26 @@
-# Remote Agent to Client Updates
+# 远程代理至客户端的更新
 
 <!-- TOC -->
 
-- [Remote Agent to Client Updates](#remote-agent-to-client-updates)
-    - [Connected](#connected)
-        - [Disconnected](#disconnected)
-        - [Setting Task Notifications](#setting-task-notifications)
-        - [Agent Security](#agent-security)
-        - [Notification Receiver Security](#notification-receiver-security)
-            - [Asymmetric keys](#asymmetric-keys)
-            - [Symmetric keys](#symmetric-keys)
+- [远程代理至客户端的更新](#远程代理至客户端的更新)
+    - [连接状态](#连接状态)
+        - [断开连接](#断开连接)
+        - [设置任务通知](#设置任务通知)
+        - [代理安全](#代理安全)
+        - [通知接收方安全](#通知接收方安全)
+            - [非对称密钥](#非对称密钥)
+            - [对称密钥](#对称密钥)
             - [OAuth](#oauth)
             - [Bearer Token](#bearer-token)
-        - [Other Considerations](#other-considerations)
-            - [Replay Prevention](#replay-prevention)
-            - [Key Rotation](#key-rotation)
+        - [其他注意事项](#其他注意事项)
+            - [重放攻击防护](#重放攻击防护)
+            - [密钥轮换](#密钥轮换)
 
 <!-- /TOC -->
 
-Some tasks can take more than seconds. They can take minutes, or hours, or even days (*"ship a sample to my client in Florida and notify me when it arrives"*). A2A agents need to communicate over long periods of time. This includes while they are connected and not connected.
+某些任务可能需要数分钟、数小时甚至数天才能完成（例如*"将样品寄送到佛罗里达州的客户处并在送达时通知我"*）。A2A 代理需要支持长期通信机制，这包括连接状态和断开状态下的通信。
 
-Clients can check whether an agent supports streaming and pushNotifications capability in the agent card.
+客户端可通过代理卡片检查代理是否支持 streaming 和 pushNotifications 能力：
 <pre>
 {
   "name": "your-agent-name",
@@ -37,38 +37,35 @@ Clients can check whether an agent supports streaming and pushNotifications capa
 }
 </pre>
 
-The agent can use below methods to get updates about task execution:
-1. **Persistent Connection**: Clients can establish a persistent connection with the agent using HTTP + Server-sent events. The agent can then send task updates using those connections per client.
+代理可通过以下方式获取任务执行更新：
+1. **持久连接**：客户端可通过 HTTP + 服务器推送事件（Server-sent events）与代理建立持久连接。代理可通过这些连接向各客户端发送任务更新。
 
-2. **Push Notifications**: Agents can send the latest full Task object payload to client specified push notification URL. This is similar to webhooks on some platforms.
-Clients can set notifications for their tasks whether they have subscribed to a Task or not. Agents should send a notification when Agent has processed a task to a stopping state like "completed", "input-required" etc and fully generated state associated message and artifacts.
+2. **推送通知**：代理可将完整的最新 Task 对象负载发送至客户端指定的推送通知 URL。此机制类似于某些平台的 webhook。
+无论客户端是否订阅了任务，均可为其任务设置通知。当代理将任务处理至终止状态（如 "completed"、"input-required" 等）并生成完整的状态关联消息及产物时，应发送通知。
 
-Clients can set notification info for their tasks whether they have subscribed to a Task or not. Agents should send a notification when Agent sees it appropriate to notify the client. One paradigm could be to send a notification when agent has processed a task to a stopping state like "completed", "input-required" etc and fully generated state associated message and artifacts.
+无论客户端是否订阅了任务，均可为其任务设置通知信息。代理应在适当时机发送通知，例如当任务进入终止状态（如 "completed"、"input-required" 等）并生成完整的状态关联消息及产物时。
 
-## Connected
-While connected, Agents update each other with Task (and related) messages. Clients and Remote Agents can work on multiple tasks concurrently over the same connection. 
+## 连接状态
+在连接状态下，代理间通过 Task（及相关）消息进行更新。客户端和远程代理可通过同一连接并行处理多个任务。
 
-Clients use [Task/Send](/documentation.md#send-a-task) to update a current task with more information or reply to an agent need. Remote Agents reply with [Task Updates](/documentation.md#streaming-support) while streaming or [Task](/documentation.md#get-a-task) while not streaming. While not streaming, it is acceptable to poll at reasonable intervals. 
+客户端使用 [Task/Send](/documentation.md#send-a-task) 更新当前任务或响应代理需求。远程代理在流式传输时通过 [Task Updates](/documentation.md#streaming-support) 响应，非流式传输时通过 [Task](/documentation.md#get-a-task) 响应。非流式传输时，客户端可定期轮询。
 
-If the agents become disconnected, they can resume the connection and receive live updates via the [Task/Resubscribe](/documentation.md#resubscribe-to-task) method.
+若连接中断，代理可通过 [Task/Resubscribe](/documentation.md#resubscribe-to-task) 方法恢复连接并获取实时更新。
 
+## 断开连接
+针对断连场景，A2A 支持推送通知机制，代理可通过 [PushNotificationConfig](/documentation.md#push-notifications) 在非连接会话期间通知客户端更新。在企业内外部，代理必须验证通知服务身份、完成服务认证，并提供与执行任务关联的标识符。
 
-## Disconnected
-For disconnected scenarios, A2A supports a push notification mechanism whereby an Agent can notify a Client of an update outside of a connected session via a [PushNotificationConfig](/documentation.md#push-notifications). Within and across enterprises, it is critical that the agent verifies the identity of the notification service,  authenticates itself with the service, and presents an identifier that ties the notification to the executing task.
+通知服务（NotificationService）应视为独立于客户端代理的服务，不保证也不预期由客户端直接运行。该服务负责代理的认证鉴权，并将验证后的通知代理至适当端点（可能是 pub/sub 队列、电子邮件收件箱或其他通知服务等）。
 
-The NotificationService should be considered a separate service from the client agent, and it is not guaranteed or even expected to be the client directly. This NotificationService is responsible for authenticating and authorizing the agent and for proxying the verified notification to the appropriate endpoint (which could be anything from a pub/sub queue, to an email inbox, to another notification service, etc).
+在特殊场景下（如 VPC 内的本地服务网格），客户端可选择自行开放端口作为通知服务。但建议企业级部署使用集中式服务，通过可信通知凭证认证远程代理，并处理在线/离线场景。此类服务类似于具备独立认证鉴权控制的移动推送通知服务。
 
-For contrived scenarios with isolated client-agent pairs (e.g. local service mesh in a contained VPC, etc.), the client may choose to simply open a port and act as its own NotificationService. However, any enterprise implementation is recommended to have a centralized service that authenticates the remote agents with trusted notification credentials and can handle online/offline scenarios. This can be thought of similarly to a mobile Push Notification Service with its own Authentication and Authorization controls.
-
-
-## Setting Task Notifications
-Clients need to set task push notification config to asynchronously receive task updates. They should generate a taskId and set the push notification configuration for the same using “tasks/pushNotification/set” RPC or directly in the `pushNotification` param of "tasks/send", "tasks/sendSubscribe".
-
+## 设置任务通知
+客户端需通过设置任务推送通知配置来异步接收任务更新。应生成 taskId 并通过 "tasks/pushNotification/set" RPC 或直接在 "tasks/send"、"tasks/sendSubscribe" 的 `pushNotification` 参数中设置通知配置。
 
 <pre>
 interface PushNotificationConfig {
   url: string;
-  token?: string; // token unique to this task/session
+  token?: string; // 该任务/会话的唯一令牌
   authentication?: {
     schemes: string[];
     credentials?: string;
@@ -76,11 +73,11 @@ interface PushNotificationConfig {
 }
 
 interface TaskPushNotificationConfig {
-  id: string; //task id
+  id: string; //任务ID
   pushNotificationConfig: PushNotificationConfig;
 }
 
-// Request to send to a task (with push notification configuration)
+// 发送任务请求（含推送通知配置）
 {
   "jsonrpc": "2.0",
   "id": 1,
@@ -104,7 +101,7 @@ interface TaskPushNotificationConfig {
   }
 }
 
-//response
+//响应
 {
   "jsonrpc": "2.0",
   "id": 1,
@@ -125,7 +122,7 @@ interface TaskPushNotificationConfig {
   }
 }
 
-// Request to set push notification config
+// 设置推送通知配置请求
 {
   "jsonrpc": "2.0",
   "id": 1,
@@ -141,7 +138,7 @@ interface TaskPushNotificationConfig {
   }
 }
 
-//Response
+//响应
 {
   "jsonrpc": "2.0",
   "id": 1,
@@ -157,14 +154,14 @@ interface TaskPushNotificationConfig {
 }
 </pre>
 
-## Agent Security
-Agents should not blindly trust the push notification URL specified by the client. Some commonly used practices are as below:
+## 代理安全
+代理不应盲目信任客户端指定的推送通知 URL。推荐采用以下安全实践：
 
-1. They should verify the push notification URL by issuing a GET challenge request.
-    * The challenge request can be the same push notification URL but with a validationToken provided either as a URL query param or a header.
-    * The notification service (or the client in simple cases) should respond to challenge request by returning the same validationToken.
-    * This seems simple but it helps avoid tricking remote agent into DDOS-ing a URL by a malicious client.
-    * Agents can issue this challenge request one-time when the push notification url is registered or keep checking this URL periodically.
+1. 通过 GET 挑战请求验证 URL
+    * 挑战请求可使用相同 URL，并通过查询参数或标头携带 validationToken
+    * 通知服务（或简单场景下的客户端）需返回相同 validationToken
+    * 该机制可防止恶意客户端诱导代理对 URL 发起 DDoS 攻击
+    * 代理可在注册 URL 时执行一次性验证或定期检查
     <pre>
     GET https://abc.com/callback-path?validationToken=randomString
     Content-Length: 0
@@ -175,42 +172,42 @@ Agents should not blindly trust the push notification URL specified by the clien
     randomString
     </pre>
 
-    An example of such check has been added in method `set_push_notification_info` of [LangGraph](https://github.com/google/A2A/blob/main/samples/python/agents/langgraph/task_manager.py) and [CLI Push listener](https://github.com/google/A2A/blob/main/samples/python/hosts/cli/push_notification_listener.py)
+    示例实现可参考 [LangGraph](https://github.com/google/A2A/blob/main/samples/python/agents/langgraph/task_manager.py) 的 `set_push_notification_info` 方法和 [CLI 推送监听器](https://github.com/google/A2A/blob/main/samples/python/hosts/cli/push_notification_listener.py)
 
-2. To further verify the identity of the notification service, it can be asked to sign the above validationToken using a pre-determined secret.
-    * The secret could be generated by the agent, specifically for this challenge request.
-    * Or if the notification service and agent use a symmetric shared key for authentication, the same key can be used by notification service to sign the validationToken.
+2. 通知服务身份验证
+    * 可要求通知服务使用预设密钥对 validationToken 签名
+    * 密钥可由代理生成（专用于本次挑战）
+    * 若使用对称密钥认证，通知服务可用相同密钥签名
 
-## Notification Receiver Security
-Notification Receivers should check the authenticity of the notifications they are receiving. A few ways they can do that are described as follows. Also, a collection of ideas for notification security can be found at https://webhooks.fyi
+## 通知接收方安全
+通知接收方应验证通知真实性。常用方法如下（更多安全方案参见 https://webhooks.fyi）：
 
-An example of push notifications using JWT + JWKS using assymetric keys has been added in [LangGraph](https://github.com/google/A2A/blob/main/samples/python/agents/langgraph/__main__.py) and [CLI Host](https://github.com/google/A2A/blob/main/samples/python/hosts/cli/__main__.py)
+[JWT + JWKS 非对称密钥示例](https://github.com/google/A2A/blob/main/samples/python/agents/langgraph/__main__.py) 和 [CLI 主机实现](https://github.com/google/A2A/blob/main/samples/python/hosts/cli/__main__.py)
 
-#### Asymmetric keys
-A pair of private and public keys can be generated using ECDSA, RSA etc. These can be generated by the notification server or the remote agent.
-1. If the key pair is generated by the notification server, (ex. APNS), the private key needs to be supplied to the agent. The notification server should keep the public key to verify incoming request payloads signed by the agent using the private key.
-2. If the key pair is generated by the agent. Then there can be two options:
-    * The public key is manually provided to the Notification Receiver.
-    * Or the public keys can be provided by the agent through JWKS protocol.
+#### 非对称密钥
+使用 ECDSA、RSA 等算法生成公私钥对：
+1. 通知服务生成密钥对时，需将私钥提供给代理。通知服务保留公钥验证代理签名
+2. 代理生成密钥对时：
+    * 手动向接收方提供公钥
+    * 通过 JWKS 协议提供公钥
 
-Agents can sign request payload using the private key and provide the request signature as a header. Or they can use JWT protocol to generate a token and provide that as a signature. Benefit of JWT protocol would also be that it standardises common fields like keyId, request timestamp.
+代理可使用私钥签名请求负载，或在标头提供 JWT 令牌。JWT 协议标准化了 keyId、时间戳等字段。
 
-#### Symmetric keys
-A simpler method can be that both notification server and agents use the same shared key to sign and verify. The notification server verifies the signature by re-signing the payload with the key. Again JWT can be used to generate the signature token.
+#### 对称密钥
+双方使用共享密钥签名验证。通知服务使用相同密钥重新签名验证。可使用 JWT 生成签名令牌。
 
-Asymmetric keys have an advantage as only the agent knows the public key and hence less chances of the key being leaked.
+非对称密钥优势在于私钥仅代理持有，降低泄露风险。
 
 #### OAuth
-Agent gets an auth token from OAuth server and supplies that in the push notification request, either as a header or as part of request payload. Notification server extracts the OAuth token and verifies it from the OAuth server.
+代理从 OAuth 服务器获取令牌，并在请求中提供。通知服务提取令牌并向 OAuth 服务器验证。
 
 #### Bearer Token
-Either party can generate the bearer token. If generated by the Notification Receiver, it can provide this token to the remote agent through the task push notification configuration.
+任一方生成承载令牌。若由接收方生成，需通过任务推送通知配置提供给代理。
 
-Since this is part of a request in plain-text, this has a chance of being leaked and hence malicious request payloads can be sent with this token. With asymmetric or symmetric keys, the payload was signed, which allowed Notification Receivers to verify authenticity of request payloads.
+因令牌以明文传输存在泄露风险，建议使用签名机制（非对称/对称密钥）验证负载真实性。
 
-## Other Considerations
-#### Replay Prevention
-Use iat in JWT or other header to describe the event timestamp. Ideally any event older than 5 mins should be rejected. This provides some protection from replay attacks.
-The timestamp should also be part of the overall request data which is fed into calculation of request signature. This validates the authenticity of timestamps as well.
-#### Key Rotation
-Ideally agents should implement a key rotation with zero downtime. One way to do this is JWKS, it allows agents to publish their public keys, both old and new. Notification Receivers should be able to use both the keys to validate the notification request payload.
+## 其他注意事项
+#### 重放攻击防护
+在 JWT 中使用 iat 字段或自定义标头记录事件时间戳。建议拒绝超过 5 分钟的历史事件。时间戳应参与签名计算以验证其真实性。
+#### 密钥轮换
+推荐实现零停机密钥轮换。JWKS 允许代理发布新旧公钥，通知接收方应能使用所有有效密钥验证请求。

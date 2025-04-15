@@ -1,38 +1,38 @@
 # A2A ❤️ MCP
 
-**TLDR;** Agentic applications need both A2A and MCP. We recommend MCP for tools and A2A for agents. 
+**TLDR;** 智能体应用需要同时使用 A2A 和 MCP。我们推荐使用 MCP 连接工具，用 A2A 连接智能体。
 
 <!-- TOC -->
 - [A2A ❤️ MCP](#a2a--mcp)
-    - [Why Protocols?](#why-protocols)
-    - [Complementary](#complementary)
-    - [Example](#example)
-    - [Intersection](#intersection)
+    - [为什么需要协议？](#为什么需要协议)
+    - [互补性](#互补性)
+    - [应用示例](#应用示例)
+    - [交集领域](#交集领域)
 
 <!-- /TOC -->
 
-## Why Protocols?
-Standard protocols are essential for enabling agentic interoperability, particularly in connecting agents to external systems. This is critical in two interconnected areas of innovation: Tools and Agents.
+## 为什么需要协议？
+标准化协议对于实现智能体互操作性至关重要，特别是在连接智能体与外部系统时。这在两个相互关联的创新领域具有关键意义：工具和智能体。
 
-**Tools** are primitives with structured inputs and outputs and (typically) well-known behavior. **Agents** are autonomous applications that can accomplish novel tasks by using tools, reasoning, and user interactions. Agentic applications must use both tools **and** agents to accomplish goals for their users.
+**工具**是具有结构化输入输出且（通常）行为可预测的原语。**智能体**是能通过使用工具、逻辑推理和用户交互来完成新任务的自主应用程序。智能体应用必须同时使用工具**和**智能体来实现用户目标。
 
-## Complementary
-[Model Context Protocol](https://modelcontextprotocol.io/) (MCP) is the emerging standard for connecting LLMs with data, resources, and tools. We already observe MCP standardizing ‘function calling’ across different models and frameworks. This is creating an ecosystem of tool service providers and dramatically lowering the complexity to connect agents with tools and data. We expect this trend to continue as more frameworks, service providers, and platforms adopt MCP. 
+## 互补性
+[Model Context Protocol](https://modelcontextprotocol.io/) (MCP) 是连接大语言模型与数据、资源和工具的新兴标准。我们已经观察到 MCP 正在统一不同模型和框架的"函数调用"功能。这正在培育工具服务提供商的生态系统，并显著降低智能体与工具及数据连接的复杂性。我们预计随着更多框架、服务提供商和平台采用 MCP，这一趋势将持续发展。
 
-A2A is focused on a different problem. A2A is an application level protocol that enables agents to collaborate in their natural modalities. It allows agents to communicate as *agents* (or as users) instead of as tools. We hope that A2A gains adoption as a complement to MCP that enables ecosystems of agents and will be working in the open with the community to make this happen. 
+A2A 则专注于解决不同的问题。A2A 是一个应用层协议，使智能体能够以其自然模态进行协作。它允许智能体以*智能体*（或用户）身份而非工具身份进行交流。我们希望 A2A 能作为 MCP 的补充协议获得采用，促进智能体生态系统的发展，并将与社区保持开放协作以实现这一目标。
 
-## Example
-Let’s look at an example: 
+## 应用示例
+通过一个示例来说明：
 
-*Consider an auto repair shop that fixes cars. The shop employs autonomous workers who use special-purpose tools (such as vehicle jacks, multimeters, and socket wrenches) to diagnose and repair problems. The workers often have to diagnose and repair problems they have not seen before. The repair process can involve extensive conversations with a customer, research, and working with part suppliers.*
+*假设某汽车修理店使用自主员工进行车辆维修。这些员工使用专用工具（如车辆千斤顶、万用表和套筒扳手）来诊断和修复问题。他们经常需要诊断和修复从未遇到过的新问题。维修过程可能涉及与客户的深入沟通、问题研究以及与零件供应商的协作。*
 
-Now let's model the shop employees as AI agents:
+现在将这些维修员工建模为 AI 智能体：
 
-* MCP is the protocol to connect these agents with their structured tools (e.g. `raise platform by 2 meters`, `turn wrench 4 mm to the right`). 
+* MCP 是连接这些智能体与结构化工具（如`升高平台2米`、`向右旋转扳手4毫米`）的协议
 
-* A2A is the protocol that enables end-users or other agents to work with the shop employees (*"my car is making a rattling noise"*). A2A enables ongoing back-and-forth communication and an evolving plan to achieve results (*"send me a picture of the left wheel"*, *"I notice fluid leaking. How long has that been happening?"*). A2A also helps the auto shop employees work with other agents such as their part suppliers. 
+* A2A 是让终端用户或其他智能体与维修员工交互的协议（如*"我的车有异响"*）。A2A 支持持续的互动沟通和动态调整的解决方案（如*"请发送左轮照片"*、*"发现液体泄漏，这种情况持续多久了？"*），同时也能帮助维修员工与零件供应商等其他智能体协作。
 
-## Intersection
-We recommend that applications model A2A agents as MCP resources (represented by their [AgentCard](/documentation.md#agent-card)). The frameworks can then use A2A to communicate with their user, the remote agents, and other agents. 
+## 交集领域
+我们建议应用程序将 A2A 智能体建模为 MCP 资源（通过其[AgentCard](/documentation.md#agent-card) 表示）。这样框架就可以使用 A2A 协议与用户、远端智能体及其他智能体进行通信。
 
-![Agentic Application showing A2A and MCP together](../images/a2a_mcp.png)
+![展示A2A与MCP协同工作的智能体应用](../images/a2a_mcp.png)

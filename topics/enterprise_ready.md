@@ -1,53 +1,53 @@
-# Enterprise Readiness
+# 企业级就绪能力
 
 <!-- TOC -->
 
-- [Enterprise Readiness](#enterprise-readiness)
-    - [Transport Level Security](#transport-level-security)
-    - [Server Identity](#server-identity)
-    - [Client and User Identity](#client-and-user-identity)
-    - [Authenticating Clients](#authenticating-clients)
-    - [Authorization and Data Privacy](#authorization-and-data-privacy)
-    - [Tracing and Observability](#tracing-and-observability)
+- [企业级就绪能力](#企业级就绪能力)
+    - [传输层安全性](#传输层安全性)
+    - [服务端身份](#服务端身份)
+    - [客户端与用户身份](#客户端与用户身份)
+    - [客户端认证](#客户端认证)
+    - [授权与数据隐私](#授权与数据隐私)
+    - [追踪与可观测性](#追踪与可观测性)
 
 <!-- /TOC -->
 
-A2A **does not** want to invent any new standards for enterprise security and instead seamlessly integrate with existing infrastructure. 
+A2A **不主张**创造新的企业安全标准，而是致力于与现有基础设施无缝集成。
 
-A2A models Enterprise Agents as standard, HTTP-based, enterprise applications and therefore relies on enterprise-standard auth, security, privacy, tracing, and monitoring. This is possible because A2A agents are opaque and do not share tools or resources (and therefore "single application" client/server best practices apply). 
+A2A 将企业级 Agent 建模为标准化的 HTTP 企业应用，因此依赖企业级的认证、安全、隐私、追踪和监控体系。这种设计的可行性源于 A2A Agent 的封装特性——它们不共享工具或资源（因此适用"单应用"客户端/服务端的最佳实践）。
 
-In fact, A2A keeps most enterprise concerns out of the protocol and instead require enterprise-grade HTTP with Open Authentication and Open Tracing support. Implementers should follow all enterprise best practices as it relates to application and user-level security. 
+实际上，A2A 将大部分企业级关注点从协议中抽离，转而要求基于企业级 HTTP 协议并支持开放式认证（Open Authentication）和开放式追踪（Open Tracing）。实施者应遵循所有与企业应用和用户级安全相关的最佳实践。
 
-## Transport Level Security
-A2A is built on HTTP and any production installation should require HTTPS using modern TLS ciphers. 
+## 传输层安全性
+A2A 构建于 HTTP 协议之上，任何生产环境部署都应强制使用 HTTPS 并采用现代 TLS 加密套件。
 
-## Server Identity
-A2A Servers present their identity in the form of digital certificates signed by well-known certificate authorities as part of the TLS negotiation. A2A Clients should verify server identity during connection establishment.
+## 服务端身份
+A2A 服务端在 TLS 协商过程中，通过知名证书颁发机构签发的数字证书来验证身份。客户端应在建立连接时验证服务端身份。
 
-## Client and User Identity
-There is no concept of a user or client identifier in A2A schemas. Instead, A2A conveys authentication requirements (scheme and materials) through the protocol. The client is responsible for negotiating with the appropriate authentication authority (out of band to A2A) and retrieving/storing credential materials (such as OAuth tokens). Those credential materials will be transmitted in HTTP headers and not in any A2A payload.
+## 客户端与用户身份
+A2A 协议本身不定义用户或客户端标识符，而是通过协议传递认证要求（方案和凭证材料）。客户端负责与认证机构进行协议外协商（out of band），获取并存储凭证材料（如 OAuth 令牌）。这些凭证将通过 HTTP 头传递，而非 A2A 有效载荷。
 
-Different authentication protocols and service providers have different requirements and individual requests may require multiple identifiers and identities in scheme specific headers. It is recommended that clients always present a client identity (representing the client agent) and user identity (representing their user) in requests to A2A servers.
+不同认证协议和服务提供商有不同要求，单个请求可能在特定方案头中包含多个标识符。建议客户端在请求中始终携带两种身份：客户端身份（代表 Agent）和用户身份（代表终端用户）。
 
-**Note**: Multi-identity federation is an open topic for discussion. For example, User U is working with Agent A requiring A-system's identifier. If Agent A then depends on Tool B or Agent B which requires B-system identifier, the user may need to provide identities for both A-system and B-system in a single request. (Assume A-system is an enterprise LDAP identity and B-system is a SaaS-provider identity).
+**注意**：多身份联合认证是待讨论的开放议题。例如用户 U 使用需要 A 系统标识符的 Agent A 时，若 Agent A 依赖需要 B 系统标识符的 Tool B 或 Agent B，则用户可能需要在单次请求中同时提供 A/B 系统的身份（假设 A 系统是企业 LDAP 身份，B 系统是 SaaS 提供商身份）。
 
-It is currently recommended that if Agent A requires the user/client to provide an alternate identity for part of a task, it sends an update in the `INPUT-REQUIRED` state with the specific authentication requirements (in the same structure as an AgentCard's authentication requirements) to the client. The client then, out of band to A2A and also out of band to A-system, negotiates with B-system's authority to obtain credential material. Those materials (such as tokens) can be passed through Agent A to Agent B. Agent B will exchange when speaking to its upstream systems.
+当前建议：若 Agent A 要求用户/客户端为任务某环节提供额外身份，应在 `INPUT-REQUIRED` 状态通过更新消息（包含与 AgentCard 认证要求相同的结构）通知客户端。客户端需在 A2A 和 A 系统之外，与 B 系统的认证机构协商获取凭证材料（如令牌），并通过 Agent A 传递给 Agent B，由 Agent B 与上游系统交互时使用。
 
-## Authenticating Clients
-A2A servers are expected to publish supported and required authentication protocol(s) in its [Agent Card](/documentation.md#agent-card). These protocols should be one of the standard [OpenAPI Authentication formats](https://swagger.io/docs/specification/v3_0/authentication/) (such as API Keys, OAuth, OIDC, etc) but can be extended to another protocol supported by both client and server.
+## 客户端认证
+A2A 服务端应在 [Agent Card](/documentation.md#agent-card) 中声明支持的认证协议（须为标准 [OpenAPI 认证格式](https://swagger.io/docs/specification/v3_0/authentication/)，如 API Keys、OAuth、OIDC 等，也支持客户端与服务端共同认可的其他协议）。
 
-Individual authentication protocols have their own mechanisms for acquiring, refreshing, and challenging credential material (such as bearer or session tokens). The credential acquisition and maintenance process is considered external to A2A. 
+各认证协议有独立的凭证获取、刷新和质询机制（如持有者令牌或会话令牌），这些凭证管理流程属于 A2A 协议外流程。
 
-A2A servers are expected to authenticate **every** request and reject or challenge requests with standard HTTP response codes (401, 403), and authentication-protocol-specific headers and bodies (such as a HTTP 401 response with a [WWW-Authenticate](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate) header indicating the required authentication schema, or OIDC discovery document at a well-known path). 
+A2A 服务端应对**每个**请求进行认证，并通过标准 HTTP 响应码（401、403）及协议特定头/体拒绝或质询请求。例如：携带 [WWW-Authenticate](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate) 头的 401 响应（指示所需认证方案），或在固定路径提供 OIDC 发现文档。
 
-## Authorization and Data Privacy
-A2A servers are expected to authorize requests based on both the user and application identity. We recommend that individual agents manage access on at least two axes:
+## 授权与数据隐私
+A2A 服务端应根据用户和应用身份进行双重授权。建议各 Agent 至少从以下两个维度实施访问控制：
 
-* **Skills**    
-Agents are expected to advertise (via an [Agent Card](/documentation.md#agent-card)) their capabilities in the form of skills. It is recommended that agents authorize on a per-skill basis (for example, OAuthScope 'foo-read-only' could limit access only to 'generateRecipe' skills).
+* **技能维度**  
+Agent 应通过 [Agent Card](/documentation.md#agent-card) 声明其技能集。建议按技能粒度授权（例如：OAuthScope 'foo-read-only' 可限制仅访问 'generateRecipe' 技能）。
 
-* **Tools (Actions and Data)**  
-It is recommended that Agents restrict access to sensitive data or actions by placing them behind Tools. When an agentic flow or model needs to access this data, the agent should authorize access to a tool based on the application+user priviledge. We highly recommend utilizing API Management with Tool access. 
+* **工具维度（操作与数据）**  
+建议通过工具（Tool）封装敏感数据或操作。当智能流程或模型需要访问时，Agent 应根据应用+用户权限进行工具级授权。强烈建议采用 API 管理方案控制工具访问。
 
-## Tracing and Observability
-As all A2A requests are 'standard' HTTP requests, both client and server should use their enterprise standard tooling and infrastructure which ideally adds appropriate instrumentation headers and writes events to standard logs and event queues. 
+## 追踪与可观测性
+所有 A2A 请求均为标准 HTTP 请求，客户端和服务端应使用企业标准工具链——自动添加检测头（instrumentation headers），并将事件写入标准日志和事件队列。

@@ -1,36 +1,35 @@
-# Discovering Agent (Card)s
+# 发现Agent Card
 
 <!-- TOC -->
 
-- [Discovering Agent Cards](#discovering-agent-cards)
-  - [Open Discovery](#open-discovery)
-  - [Curated Discovery (Registry-Based)](#curated-discovery-registry-based)
-  - [Private Discovery (API-Based)](#private-discovery-api-based)
-  - [Securing Agent Cards](#securing-agent-cards)
+- [发现Agent Card](#发现agent-card)
+  - [开放发现](#开放发现)
+  - [策展式发现（基于注册中心）](#策展式发现基于注册中心)
+  - [私有发现（基于API）](#私有发现基于api)
+  - [保护Agent Card的安全](#保护agent-card的安全)
 
 <!-- /TOC -->
 
-A2A's [AgentCard](/documentation.md#agent-card) standardizes the *format* of the data shared during discovery. However there are unlimited ways to discover these agent cards. We anticipate this being an open topic for discussion and look forward to ideas from the community.
+A2A的[AgentCard](/documentation.md#agent-card)规范了发现过程中共享数据的*格式*，但发现这些Agent Card的方式是无限的。我们期待这是一个开放的讨论话题，并希望从社区中获得更多创意。
 
-Here is our current thinking. 
+以下是我们当前的思路。
 
-## Open Discovery
-We recommend enterprises host their agent cards at a well-known path. Specifically: https://`DOMAIN`/.well-known/agent.json. Clients will use DNS to resolve a known or found domain, send a simple `GET` request to the path, and receive the agent card. 
+## 开放发现
+建议企业将Agent Card托管在标准化路径下，具体为：https://`DOMAIN`/.well-known/agent.json。客户端可通过DNS解析已知或发现的域名，向该路径发送简单的`GET`请求以获取Agent Card。
 
-This will enable web-crawlers and applications to easily discover agents for known or configured domains. This effectively reduces the discovery process to "find a domain". 
+这种方式使得网络爬虫和应用程序能够轻松发现已知或已配置域名的Agent。这本质上将发现过程简化为“找到一个域名”。
 
-## Curated Discovery (Registry-Based)
-We anticipate enterprise applications making curated registries of agents available through a catalog interface. This opens up more enterprise scenarios such as company-specific or team-specific agent registries that are curated by an administrator. 
+## 策展式发现（基于注册中心）
+我们预见企业应用将通过目录接口提供精心维护的Agent注册中心。这将支持更多企业场景，例如由管理员维护的、公司或团队专属的Agent注册中心。
 
-*We **are** considering adding Registry support to the protocol - please drop us a [note](https://github.com/google/A2A/blob/main/README.md#contributing) with your opinion and where you see this being valuable as a standard*
+*我们**正在**考虑在协议中增加注册中心支持——欢迎通过[反馈渠道](https://github.com/google/A2A/blob/main/README.md#contributing)分享您的观点及潜在应用场景*
 
-## Private Discovery (API-Based)
-There will undoubtably be private "agent stores" or proprietary agents where cards are exchanged behind custom APIs.
+## 私有发现（基于API）
+未来必然会出现私有“Agent仓库”或专有Agent，它们通过自定义API在封闭环境中交换Agent Card。
 
-*We **are not** considering private discovery APIs as an A2A concern - please drop us a [note](https://github.com/google/A2A/blob/main/README.md#contributing) with your opinion and where you see this being valuable as a standard*
+*我们**目前不打算**将私有发现API纳入A2A协议范围——欢迎通过[反馈渠道](https://github.com/google/A2A/blob/main/README.md#contributing)说明您认为此类API应被标准化的场景*
 
-## Securing Agent Cards
+## 保护Agent Card的安全
+Agent Card可能包含敏感信息。实现者可通过身份验证和授权机制来保护Agent Card。例如，在组织内部，即使是标准化路径的开放发现也可通过mTLS进行保护，并限制特定客户端的访问。注册中心和私有发现API应要求身份验证，并根据不同身份返回不同的信息。
 
-Agent cards may contain sensitive information. Implementors may decide to secure their agent cards behind controls that require authentication and authorization. For example, within an organization, even an open discovery at a well-known path could be guarded by mTLS and restricted to specific clients. Registries and Private Discovery APIs should require authentication and return different artifacts for different identities. 
-
-Note that implementors may include credential information (such as API Keys) in their Agent Cards. It is recommended that this information is NEVER available without Authentication. 
+需注意：实现者可能在Agent Card中包含凭证信息（如API密钥）。强烈建议此类信息**必须**在无身份验证时完全不可见。

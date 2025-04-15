@@ -1,109 +1,107 @@
-# Agent2Agent Protocol (A2A)
+# Agent2Agent 协议（A2A）
 
-An open protocol enabling Agent-to-Agent interoperability, bridging the gap between **opaque** agentic systems.
+一个实现智能体间互操作的开放协议，弥合**不透明**智能体系统之间的鸿沟。
 <img src="images/a2a_actors.png" width="70%" style="margin:20px auto;display:block;">
 
 <!-- TOC -->
 
 - [Agent2Agent Protocol A2A](#agent2agent-protocol-a2a)
-  - [Feedback and Changes](#feedback-and-changes)
-  - [Key Principles](#key-principles)
-  - [More Detailed Discussions](#more-detailed-discussions)
-  - [Overview](#overview)
-    - [Actors](#actors)
-    - [Transport](#transport)
-    - [Authentication and Authorization](#authentication-and-authorization)
-  - [Agent Card](#agent-card)
-    - [Discovery](#discovery)
-    - [Representation](#representation)
-  - [Agent-to-Agent Communication](#agent-to-agent-communication)
-  - [Core Objects](#core-objects)
-    - [Task](#task)
-    - [Artifact](#artifact)
-    - [Message](#message)
-    - [Part](#part)
-    - [Push Notifications](#push-notifications)
-- [Sample Methods and JSON Responses](#sample-methods-and-json-responses)
-  - [Agent Card](#agent-card)
-  - [Send a Task](#send-a-task)
-  - [Get a Task](#get-a-task)
-  - [Cancel a Task](#cancel-a-task)
-  - [Set Task Push Notifications](#set-task-push-notifications)
-  - [Get Task Push Notifications](#get-task-push-notifications)
-  - [Multi-turn Conversations](#multi-turn-conversations)
-  - [Streaming Support](#streaming-support)
-    - [Resubscribe to Task](#resubscribe-to-task)
-  - [Non-textual Media](#non-textual-media)
-  - [Structured output](#structured-output)
-  - [Error Handling](#error-handling)
+  - [反馈与变更](#反馈与变更)
+  - [核心原则](#核心原则)
+  - [详细讨论](#详细讨论)
+  - [概览](#概览)
+    - [参与者](#参与者)
+    - [传输层](#传输层)
+    - [身份验证与授权](#身份验证与授权)
+  - [智能体卡片](#智能体卡片)
+    - [发现机制](#发现机制)
+    - [表示形式](#表示形式)
+  - [智能体间通信](#智能体间通信)
+  - [核心对象](#核心对象)
+    - [任务](#任务)
+    - [产物](#产物)
+    - [消息](#消息)
+    - [内容片段](#内容片段)
+    - [推送通知](#推送通知)
+- [示例方法与JSON响应](#示例方法与json响应)
+  - [智能体卡片](#智能体卡片-1)
+  - [发送任务](#发送任务)
+  - [获取任务](#获取任务)
+  - [取消任务](#取消任务)
+  - [设置任务推送通知](#设置任务推送通知)
+  - [获取任务推送通知](#获取任务推送通知)
+  - [多轮对话](#多轮对话)
+  - [流式支持](#流式支持)
+    - [重新订阅任务](#重新订阅任务)
+  - [非文本媒体](#非文本媒体)
+  - [结构化输出](#结构化输出)
+  - [错误处理](#错误处理)
 
 <!-- /TOC -->
 
-## Feedback and Changes
+## 反馈与变更
 
-A2A is a work in progress and is expected to change based on community feedback. This repo contains the initial specification, documentation, and [sample code](https://github.com/google/A2A/tree/main/samples). We will continue to update this repo with more features, more examples, specs, and libraries as they become available. When the spec and samples can graduate to a production quality SDK, we will declare version 1.0 and maintain stable releases.
+A2A 是持续演进中的协议，将根据社区反馈进行调整。本仓库包含初始规范、文档和[示例代码](https://github.com/google/A2A/tree/main/samples)。我们将持续更新更多功能、示例、规范和库。当规范和示例达到生产级SDK标准时，将发布1.0版本并保持稳定更新。
 
-## Key Principles
+## 核心原则
 
-Using A2A, agents accomplish tasks for end-users without sharing memory, thoughts, or tools. Instead the agents exchange context, status, instructions, and data in their native modalities.
+通过A2A，智能体可在不共享记忆、思考过程或工具的情况下为用户完成任务。智能体通过原生模态交换上下文、状态、指令和数据：
 
-- **Simple**: Reuse existing standards
-- **Enterprise Ready**: Auth, Security, Privacy, Tracing, Monitoring
-- **Async First**: (Very) Long running-tasks and human-in-the-loop
-- **Modality Agnostic**: text, audio/video, forms, iframe, etc.
-- **Opaque Execution**: Agents do not have to share thoughts, plans, or tools.
+- **简洁性**：复用现有标准
+- **企业级支持**：身份验证、安全、隐私、追踪、监控
+- **异步优先**：支持（超）长时任务和人工介入
+- **模态无关**：支持文本、音视频、表单、iframe等
+- **执行不透明**：智能体无需共享思考过程、计划或工具
 
-### More Detailed Discussions
+### 详细讨论
 
-- [A2A and MCP](topics/a2a_and_mcp.md?id=a2a-❤%ef%b8%8f-mcp)
-- [Enterprise Ready](topics/enterprise_ready.md?id=enterprise-readiness)
-- [Push Notifications](topics/push_notifications.md?id=remote-agent-to-client-updates)
-- [Agent Discovery](topics/agent_discovery.md?id=discovering-agent-cards)
+- [A2A与MCP](topics/a2a_and_mcp.md?id=a2a-❤%ef%b8%8f-mcp)
+- [企业级支持](topics/enterprise_ready.md?id=enterprise-readiness)
+- [推送通知](topics/push_notifications.md?id=remote-agent-to-client-updates)
+- [智能体发现](topics/agent_discovery.md?id=discovering-agent-cards)
 
-## Overview
+## 概览
 
-### Actors
+### 参与者
 
-The A2A protocol has three actors:
+A2A协议包含三类参与者：
 
-- **User**  
-  The end-user (human or service) that is using an agentic system to accomplish tasks.
-- **Client**  
-  The entity (service, agent, application) that is requesting an action from an opaque agent on behalf of the user.
-- **Remote Agent (Server)**  
-  The opaque ("blackbox") agent which is the A2A server.
+- **用户**  
+  使用智能体系统完成任务的最终用户（人类或服务）
+- **客户端**  
+  代表用户向不透明智能体发起操作请求的实体（服务/智能体/应用）
+- **远端智能体（服务端）**  
+  作为A2A服务端的不透明（"黑盒"）智能体
 
-### Transport
+### 传输层
 
-The protocol leverages HTTP for transport between the client and the remote agent. Depending on the capabilities of the client and the remote agent, they may leverage SSE for supporting streaming for receiving updates from the server.
+协议使用HTTP作为客户端与远端智能体间的传输层。根据双方能力，可使用SSE支持流式更新。
 
-A2A leverages [JSON-RPC 2.0](https://www.jsonrpc.org/specification) as the data exchange format for communication between a Client and a Remote Agent.
+A2A采用[JSON-RPC 2.0](https://www.jsonrpc.org/specification)作为通信数据交换格式。
 
-### Async
+### 异步支持
 
-A2A clients and servers can use standard request/response patterns and poll for updates. However, A2A also supports streaming updates through SSE (while connected) and receiving [push notifications](/topics/push_notifications.md?id=remote-agent-to-client-updates) while disconnected.
+A2A客户端和服务端可使用标准请求/响应模式轮询更新。同时支持通过SSE进行流式更新，以及在断开连接时接收[推送通知](/topics/push_notifications.md?id=remote-agent-to-client-updates)。
 
-### Authentication and Authorization
+### 身份验证与授权
 
-A2A models agents as enterprise applications (and can do so because A2A agents are opaque and do not share tools and resources). This quickly brings enterprise-readiness to agentic interop.
+A2A将智能体建模为企业级应用（因其不透明性不共享工具和资源），从而快速实现企业级互操作。
 
-A2A follows [OpenAPI’s Authentication specification](https://swagger.io/docs/specification/v3_0/authentication/) for authentication. Importantly, A2A agents do not exchange identity information within the A2A protocol. Instead, they obtain materials (such as tokens) out of band and transmit materials in HTTP headers and not in A2A payloads.
+遵循[OpenAPI认证规范](https://swagger.io/docs/specification/v3_0/authentication/)。关键点：A2A协议内不交换身份信息，凭证材料通过HTTP头传输，不在载荷中携带。
 
-While A2A does not transmit identity in-band, servers do send authentication requirements in A2A payloads. At minimum, servers are expected to publish their requirements in their [Agent Card](#agent-card). Thoughts about discovering agent cards are in [this topic](topics/agent_discovery.md?id=discovering-agent-cards).
+服务端需在[智能体卡片](#智能体卡片)中发布认证要求，详细讨论参见[企业级支持](topics/enterprise_ready.md)。
 
-Clients should use one of the servers published authentication protocols to authenticate their identity and obtain credential material. A2A servers should authenticate **every** request and reject or challenge requests with standard HTTP response codes (401, 403), and authentication-protocol-specific headers and bodies (such as a HTTP 401 response with a [WWW-Authenticate](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate) header indicating the required authentication schema, or OIDC discovery document at a well-known path). More details discussed in [Enterprise Ready](topics/enterprise_ready.md).
+> 注意：若智能体需要额外凭证（如使用特定工具），应返回`Input-Required`状态并携带认证结构。客户端需通过带外方式获取凭证。
 
-> Note: If an agent requires that the client/user provide additional credentials during execution of a task (for example, to use a specific tool), the agent should return a task status of `Input-Required` with the payload being an Authentication structure. The client should, again, obtain credential material out of band to A2A.
+## 智能体卡片
 
-## Agent Card
+支持A2A的远端智能体需发布JSON格式的**智能体卡片**，描述其能力/技能和认证机制。客户端据此选择最佳智能体进行通信。
 
-Remote Agents that support A2A are required to publish an **Agent Card** in JSON format describing the agent’s capabilities/skills and authentication mechanism. Clients use the Agent Card information to identify the best agent that can perform a task and leverage A2A to communicate with that remote agent.
+### 发现机制
 
-### Discovery
+推荐托管路径：https://`base url`/.well-known/agent.json。兼容DNS发现机制，也支持私有注册中心（如"智能体目录"）。详见[发现文档](topics/agent_discovery.md?id=discovering-agent-cards)。
 
-We recommend agents host their Agent Card at https://`base url`/.well-known/agent.json. This is compatible with a DNS approach where the client finds the server IP via DNS and sends an HTTP GET to retrieve the agent card. We also anticipate that systems will maintain private registries (e.g. an ‘Agent Catalog’ or private marketplace, etc). More discussion can be found in [this document](topics/agent_discovery.md?id=discovering-agent-cards).
-
-### Representation
+### 表示形式
 
 Following is the proposed representation of an Agent Card
 
