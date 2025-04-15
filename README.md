@@ -1,97 +1,73 @@
-![image info](images/A2A_banner.png)
+![image info](images/A2A_banner.png) **_一个开放协议，实现不透明智能体应用之间的通信与互操作。_** <!-- TOC --> - [Agent2Agent Protocol A2A](#agent2agent-protocol-a2a) - [快速入门](#快速入门) - [贡献指南](#贡献指南) - [未来计划](#未来计划) - [关于项目](#关于项目) <!-- /TOC --> 企业采用AI面临的最大挑战之一是实现不同框架和供应商构建的智能体协同工作。为此我们创建了开放的*Agent2Agent（A2A）协议*，这是一种促进跨生态系统智能体通信的协作方案。Google主导这个行业级开放协议倡议，因为我们坚信该协议**通过为智能体提供通用语言——无论其构建框架或供应商——将成为多智能体通信的关键支撑**。借助*A2A*，智能体可以相互展示能力、协商与用户的交互方式（通过文本、表单或双向音视频），同时确保安全协作。
 
-**_An open protocol enabling communication and interoperability between opaque agentic applications._**
+### **实战演示** 
+观看[演示视频](https://storage.googleapis.com/gweb-developer-goog-blog-assets/original_videos/A2A_demo_v4.mp4)了解A2A如何实现不同智能体框架的无缝通信。
 
-<!-- TOC -->
+### 核心概念
+Agent2Agent（A2A）协议促进独立AI智能体间的通信，核心概念如下：
 
-- [Agent2Agent Protocol A2A](#agent2agent-protocol-a2a)
-    - [Getting Started](#getting-started)
-    - [Contributing](#contributing)
-    - [What's next](#whats-next)
-    - [About](#about)
+* **Agent Card（智能体名片）：** 位于`/.well-known/agent.json`的公共元数据文件，描述智能体的能力、技能、端点URL和认证要求。客户端通过此文件进行服务发现。
+* **A2A Server（服务端）：** 实现A2A协议方法（定义于[JSON规范](/specification)）的HTTP端点。负责接收请求并管理任务执行。
+* **A2A Client（客户端）：** 使用A2A服务的应用或其他智能体。通过`tasks/send`等请求与A2A服务端交互。
+* **Task（任务）：** 任务是最小工作单元。客户端通过发送消息（`tasks/send`或`tasks/sendSubscribe`）创建任务。每个任务有唯一ID，经历`submitted`（已提交）、`working`（执行中）、`input-required`（需输入）、`completed`（已完成）、`failed`（失败）、`canceled`（取消）等状态。
+* **Message（消息）：** 表示客户端（`role: "user"`）与智能体（`role: "agent"`）之间的交互轮次。消息由多个Part组成。
+* **Part（内容块）：** 消息或产物的基本内容单元，包含`TextPart`（文本）、`FilePart`（文件，支持内联字节或URI）或`DataPart`（结构化JSON数据，如表单）。
+* **Artifact（产物）：** 任务执行过程中生成的结果（如生成的文件、结构化数据），同样由Part构成。
+* **Streaming（流式通信）：** 针对长任务，支持`streaming`能力的服务端可使用`tasks/sendSubscribe`。客户端通过Server-Sent Events（SSE）接收`TaskStatusUpdateEvent`或`TaskArtifactUpdateEvent`事件，实时获取进度。
+* **Push Notifications（推送通知）：** 支持`pushNotifications`的服务端可通过`tasks/pushNotification/set`配置客户端提供的webhook URL，主动推送任务更新。
 
-<!-- /TOC -->
+### **典型工作流**
+1. **服务发现：** 客户端从服务端的well-known URL获取Agent Card
+2. **任务启动：** 客户端发送包含初始消息和唯一Task ID的`tasks/send`或`tasks/sendSubscribe`请求
+3. **任务处理：**
+   * **（流式模式）：** 服务端通过SSE推送状态更新和产物
+   * **（同步模式）：** 服务端同步处理任务并返回最终`Task`对象
+4. **交互（可选）：** 若任务进入`input-required`状态，客户端使用相同Task ID继续发送消息
+5. **任务完成：** 任务最终进入终止状态（`completed`/`failed`/`canceled`）
 
-One of the biggest challenges in enterprise AI adoption is getting agents built on different frameworks and vendors to work together. That’s why we created an open *Agent2Agent (A2A) protocol*, a collaborative way to help agents across different ecosystems communicate with each other. Google is driving this open protocol initiative for the industry because we believe this protocol will be **critical to support multi-agent communication by giving your agents a common language – irrespective of the framework or vendor they are built on**. 
-With *A2A*, agents can show each other their capabilities and negotiate how they will interact with users (via text, forms, or bidirectional audio/video) – all while working securely together.
+### **快速入门**
+* 📚 阅读[技术文档](https://google.github.io/A2A/#/documentation)了解协议能力
+* 📝 查看协议的[JSON规范](/specification)
+* 🎬 使用[示例代码](/samples)体验A2A
+   * A2A客户端/服务端示例（[Python](/samples/python/common)、[JS](/samples/js/src)）
+   * [多智能体Web应用](/demo/README.md)
+   * 命令行工具（[Python](/samples/python/hosts/cli/README.md)、[JS](/samples/js/README.md)）
+* 🤖 通过[示例智能体](/samples/python/agents/README.md)学习如何接入不同框架
+   * [Agent Developer Kit (ADK)](/samples/python/agents/google_adk/README.md)
+   * [CrewAI](/samples/python/agents/crewai/README.md)
+   * [LangGraph](/samples/python/agents/langgraph/README.md)
+   * [Genkit](/samples/js/src/agents/README.md)
+* 📑 查阅关键主题
+   * [A2A与MCP](https://google.github.io/A2A/#/topics/a2a_and_mcp.md)
+   * [智能体发现机制](https://google.github.io/A2A/#/topics/agent_discovery.md)
+   * [企业级支持](https://google.github.io/A2A/#/topics/enterprise_ready.md)
+   * [推送通知详解](https://google.github.io/A2A/#/topics/push_notifications.md)
 
-### **See A2A in Action**
+### **贡献指南**
+欢迎贡献！请阅读[贡献指南](CONTRIBUTING.md)开始参与。\
+有疑问？加入[GitHub讨论区](https://github.com/google/A2A/discussions/)。\
+协议改进建议请提交至[GitHub Issues](https://github.com/google/A2A/issues)。\
+私有反馈可通过[Google表单](https://docs.google.com/forms/d/e/1FAIpQLScS23OMSKnVFmYeqS2dP7dxY3eTyT7lmtGLUa8OJZfP4RTijQ/viewform)提交
 
-Watch [this demo video](https://storage.googleapis.com/gweb-developer-goog-blog-assets/original_videos/A2A_demo_v4.mp4) to see how A2A enables seamless communication between different agent frameworks.
+### **未来计划**
+协议改进方向与示例增强计划：
 
-### Conceptual Overview
+**协议增强：**
+* **智能体发现：**
+   * 在`AgentCard`中规范化授权方案和可选凭证
+* **智能体协作：**
+   * 研究`QuerySkill()`方法用于动态检查未声明技能
+* **任务生命周期与UX：**
+   * 支持任务中动态UX协商（如中途启用音视频）
+* **客户端方法与传输：**
+   * 扩展客户端发起的方法支持
+   * 提升流式通信可靠性和推送通知机制
 
-The Agent2Agent (A2A) protocol facilitates communication between independent AI agents. Here are the core concepts:
+**示例与文档：**
+* 简化"Hello World"示例
+* 增加框架集成示例和特性演示
+* 完善客户端/服务端通用库文档
+* 从JSON Schema生成可读文档
 
-*   **Agent Card:** A public metadata file (usually at `/.well-known/agent.json`) describing an agent's capabilities, skills, endpoint URL, and authentication requirements. Clients use this for discovery.
-*   **A2A Server:** An agent exposing an HTTP endpoint that implements the A2A protocol methods (defined in the [json specification](/specification)). It receives requests and manages task execution.
-*   **A2A Client:** An application or another agent that consumes A2A services. It sends requests (like `tasks/send`) to an A2A Server's URL.
-*   **Task:** The central unit of work. A client initiates a task by sending a message (`tasks/send` or `tasks/sendSubscribe`). Tasks have unique IDs and progress through states (`submitted`, `working`, `input-required`, `completed`, `failed`, `canceled`).
-*   **Message:** Represents communication turns between the client (`role: "user"`) and the agent (`role: "agent"`). Messages contain `Parts`.
-*   **Part:** The fundamental content unit within a `Message` or `Artifact`. Can be `TextPart`, `FilePart` (with inline bytes or a URI), or `DataPart` (for structured JSON, e.g., forms).
-*   **Artifact:** Represents outputs generated by the agent during a task (e.g., generated files, final structured data). Artifacts also contain `Parts`.
-*   **Streaming:** For long-running tasks, servers supporting the `streaming` capability can use `tasks/sendSubscribe`. The client receives Server-Sent Events (SSE) containing `TaskStatusUpdateEvent` or `TaskArtifactUpdateEvent` messages, providing real-time progress.
-*   **Push Notifications:** Servers supporting `pushNotifications` can proactively send task updates to a client-provided webhook URL, configured via `tasks/pushNotification/set`.
-
-**Typical Flow:**
-
-1.  **Discovery:** Client fetches the Agent Card from the server's well-known URL.
-2.  **Initiation:** Client sends a `tasks/send` or `tasks/sendSubscribe` request containing the initial user message and a unique Task ID.
-3.  **Processing:**
-    *   **(Streaming):** Server sends SSE events (status updates, artifacts) as the task progresses.
-    *   **(Non-Streaming):** Server processes the task synchronously and returns the final `Task` object in the response.
-4.  **Interaction (Optional):** If the task enters `input-required`, the client sends subsequent messages using the same Task ID via `tasks/send` or `tasks/sendSubscribe`.
-5.  **Completion:** The task eventually reaches a terminal state (`completed`, `failed`, `canceled`).
-
-### **Getting Started**
-
-* 📚 Read the [technical documentation](https://google.github.io/A2A/#/documentation) to understand the capabilities
-* 📝 Review the [json specification](/specification) of the protocol structures
-* 🎬 Use our [samples](/samples) to see A2A in action
-    * Sample A2A Client/Server ([Python](/samples/python/common), [JS](/samples/js/src))
-    * [Multi-Agent Web App](/demo/README.md)
-    * CLI ([Python](/samples/python/hosts/cli/README.md), [JS](/samples/js/README.md))
-* 🤖 Use our [sample agents](/samples/python/agents/README.md) to see how to bring A2A to agent frameworks
-    * [Agent Developer Kit (ADK)](/samples/python/agents/google_adk/README.md)
-    * [CrewAI](/samples/python/agents/crewai/README.md)
-    * [LangGraph](/samples/python/agents/langgraph/README.md)
-    * [Genkit](/samples/js/src/agents/README.md)
-* 📑 Review key topics to understand protocol details 
-    * [A2A and MCP](https://google.github.io/A2A/#/topics/a2a_and_mcp.md)
-    * [Agent Discovery](https://google.github.io/A2A/#/topics/agent_discovery.md)
-    * [Enterprise Ready](https://google.github.io/A2A/#/topics/enterprise_ready.md)
-    * [Push Notifications](https://google.github.io/A2A/#/topics/push_notifications.md) 
-
-### **Contributing**
-
-We welcome contributions! Please see our [contributing guide](CONTRIBUTING.md) to get started.\
-Have questions? Join our community in [GitHub discussions](https://github.com/google/A2A/discussions/).\
-Help with protocol improvement feedback, in [GitHub issues](https://github.com/google/A2A/issues).\
-Want to send private feedback? use this [Google form](https://docs.google.com/forms/d/e/1FAIpQLScS23OMSKnVFmYeqS2dP7dxY3eTyT7lmtGLUa8OJZfP4RTijQ/viewform)
-
-### **What's next**
-
-Future plans include improvements to the protocol itself and enhancements to the samples:
-
-**Protocol Enhancements:**
-
-*   **Agent Discovery:**
-    *   Formalize inclusion of authorization schemes and optional credentials directly within the `AgentCard`.
-*   **Agent Collaboration:**
-    *   Investigate a `QuerySkill()` method for dynamically checking unsupported or unanticipated skills.
-*   **Task Lifecycle & UX:**
-    *   Support for dynamic UX negotiation *within* a task (e.g., agent adding audio/video mid-conversation).
-*   **Client Methods & Transport:**
-    *   Explore extending support to client-initiated methods (beyond task management).
-    *   Improvements to streaming reliability and push notification mechanisms.
-
-**Sample & Documentation Enhancements:**
-
-*   Simplify "Hello World" examples.
-*   Include additional examples of agents integrated with different frameworks or showcasing specific A2A features.
-*   Provide more comprehensive documentation for the common client/server libraries.
-*   Generate human-readable HTML documentation from the JSON Schema.
-
-### **About**
-
-A2A Protocol is an open source project run by Google LLC, under [License](LICENSE) and open to contributions from the entire community.
+### **关于项目**
+A2A协议是由Google LLC运营的开源项目，遵循[许可协议](LICENSE)，欢迎社区共同贡献。
