@@ -1,257 +1,250 @@
-# A2A (Agent2Agent) Protocol High-Level Summary
+# A2A（Agent2Agent）协议高级概览
 
-This project defines and demonstrates the **Agent2Agent (A2A) protocol**, an open standard initiated by Google designed to enable communication and interoperability between disparate AI agent systems. The core goal is to allow agents built on different frameworks (e.g., LangGraph, CrewAI, Google ADK, Genkit) or by different vendors to discover each other's capabilities, negotiate interaction modes (text, forms, files, potentially audio/video later), and collaborate on tasks.
+本项目定义并演示了由Google发起的开放标准**Agent2Agent（A2A）协议**，旨在实现不同AI代理系统之间的通信与互操作性。核心目标是让基于不同框架（如LangGraph、CrewAI、Google ADK、Genkit）或不同厂商构建的代理能够发现彼此能力、协商交互模式（文本、表单、文件，未来可能支持音视频）并协作完成任务。
 
-The repository provides:
+代码库提供：
 
-1.  **Formal Specification:** A detailed JSON Schema (`specification/json/a2a.json`) defining the structure of A2A messages, including requests, responses, task states, artifacts, and agent metadata (Agent Cards).
-2.  **Core Concepts Documentation (Implied):** Links in the main README suggest documentation covering agent discovery, task lifecycle, artifact exchange, streaming updates, push notifications, and enterprise readiness.
-3.  **Sample Implementations:**
-    *   **Common Libraries:** Reusable Python (`samples/python/common`) and JavaScript/TypeScript (`samples/js/src`) code for building A2A clients and servers, handling JSON-RPC communication, task management, and potentially authentication.
-    *   **Example Agents:** Demonstrations of integrating A2A into various agent frameworks:
-        *   **Python:** LangGraph (currency conversion, streaming), CrewAI (image generation, file artifacts), Google ADK (expense reports, form handling).
-        *   **JavaScript/TypeScript:** Genkit (movie info via API, code generation with file artifacts).
-    *   **Example Hosts:** Applications that *consume* A2A services:
-        *   CLIs in both Python and JS for direct interaction.
-        *   A Python-based multi-agent orchestrator (using Google ADK) that delegates tasks to other A2A agents.
-4.  **Demo Web Application:** A web UI (`demo/ui`, likely using Mesop) demonstrating multi-agent interactions facilitated by the A2A protocol, including visualization of conversations, tasks, events, and agent discovery. It features a backend service coordinating with the host agent.
+1. **正式规范**：详细JSON Schema（`specification/json/a2a.json`）定义A2A消息结构，包含请求、响应、任务状态、工件和代理元数据（Agent Cards）
+2. **核心概念文档（隐含）**：主README中的链接指向代理发现、任务生命周期、工件交换、流式更新、推送通知和企业级就绪等文档
+3. **示例实现**：
+    * **通用库**：Python（`samples/python/common`）和JavaScript/TypeScript（`samples/js/src`）可复用代码，用于构建A2A客户端/服务端，处理JSON-RPC通信、任务管理和认证
+    * **示例代理**：展示A2A集成到各代理框架：
+        * **Python**：LangGraph（货币转换、流式）、CrewAI（图像生成、文件工件）、Google ADK（报销单、表单处理）
+        * **JavaScript/TypeScript**：Genkit（通过API获取电影信息、生成代码文件）
+    * **示例宿主应用**：使用A2A服务的应用：
+        * Python和JS的CLI直接交互工具
+        * 基于Python（使用Google ADK）的多代理协调器，可委派任务给其他A2A代理
+4. **演示Web应用**：使用Mesop构建的Web UI（`demo/ui`），展示A2A协议支持的多代理交互，可视化对话、任务、事件和代理发现，后端服务与宿主代理协调
 
-Key features of the A2A protocol highlighted by the specification and samples include: agent discovery via Agent Cards, standardized task management (send, get, cancel), support for different content types (text, files, structured data) via `Parts` and `Artifacts`, streaming updates for long-running tasks, and mechanisms for push notifications. The project is open source and encourages community contribution.
+协议核心特性包括：通过Agent Cards进行代理发现、标准化任务管理（发送/获取/取消）、通过`Parts`和`Artifacts`支持多种内容类型、长任务流式更新、推送通知机制。项目开源并鼓励社区贡献。
 
-# A2A (Agent2Agent) Protocol 
+# A2A（Agent2Agent）协议 
 
-## 1. Overview
+## 1. 概述
 
-*   **Project Name:** Agent2Agent (A2A) Protocol
-*   **Purpose:** An open protocol by Google enabling communication and interoperability between AI agents built on different frameworks or by different vendors.
-*   **Core Goal:** Allow agents to discover capabilities, negotiate interaction, and collaborate securely on tasks.
-*   **Communication:** Uses JSON-RPC 2.0 over HTTP(S). Supports standard request/response and Server-Sent Events (SSE) for streaming.
-*   **Key Components:** Specification (JSON Schema), Common Libraries (Python, JS/TS), Sample Agents (LangGraph, CrewAI, ADK, Genkit), Sample Hosts (CLI, Orchestrator), Demo Web App (Mesop).
+* **项目名称**：Agent2Agent（A2A）协议
+* **目的**：Google提出的开放协议，实现不同框架或厂商AI代理间的通信互操作
+* **核心目标**：支持代理发现能力、协商交互方式、安全协作完成任务
+* **通信方式**：基于HTTP(S)的JSON-RPC 2.0，支持标准请求/响应和Server-Sent Events（SSE）流式通信
+* **关键组件**：规范（JSON Schema）、通用库（Python/JS/TS）、示例代理（LangGraph/CrewAI/ADK/Genkit）、示例宿主（CLI/协调器）、Mesop演示Web应用
 
-## 2. Protocol Specification (`specification/json/a2a.json`)
+## 2. 协议规范（`specification/json/a2a.json`）
 
-### 2.1. Core JSON-RPC Structures
+### 2.1 核心JSON-RPC结构
 
-*   **`JSONRPCMessage`:** Base for requests/responses. Contains `jsonrpc: "2.0"` and optional `id`.
-*   **`JSONRPCRequest`:** Represents a request.
-    *   `method`: String identifying the operation (e.g., "tasks/send").
-    *   `params`: Object or Array containing parameters for the method.
-    *   `id`: Unique identifier (string/number) for request/response correlation. Omitted/null for notifications.
-*   **`JSONRPCResponse`:** Represents a response.
-    *   `result`: Contains the successful result data (can be `null`). Mutually exclusive with `error`.
-    *   `error`: Contains an error object if the request failed. Mutually exclusive with `result`.
-    *   `id`: Must match the corresponding request `id`.
-*   **`JSONRPCError`:** Represents an error.
-    *   `code`: Integer error code.
-    *   `message`: String description of the error.
-    *   `data`: Optional additional error details.
+* **`JSONRPCMessage`**：请求/响应基类，包含`jsonrpc: "2.0"`和可选`id`
+* **`JSONRPCRequest`**：请求对象
+    * `method`：标识操作方法的字符串（如"tasks/send"）
+    * `params`：方法参数对象或数组
+    * `id`：唯一请求标识符（字符串/数字），通知类请求可省略
+* **`JSONRPCResponse`**：响应对象
+    * `result`：成功结果数据（可为null），与`error`互斥
+    * `error`：错误对象，与`result`互斥
+    * `id`：必须匹配对应请求id
+* **`JSONRPCError`**：错误对象
+    * `code`：整数错误码
+    * `message`：错误描述
+    * `data`：可选错误详情
 
-### 2.2. Key A2A Data Objects
+### 2.2 关键A2A数据对象
 
-*   **`AgentCard`:** Metadata describing an agent. Found typically at `/.well-known/agent.json`.
-    *   `name`: (string) Human-readable name.
-    *   `description`: (string | null) Agent description.
-    *   `url`: (string) Base URL endpoint for the agent's A2A service.
-    *   `provider`: (`AgentProvider` | null) Organization details.
-    *   `version`: (string) Agent/API version.
-    *   `documentationUrl`: (string | null) Link to documentation.
-    *   `capabilities`: (`AgentCapabilities`) Features supported (streaming, push).
-    *   `authentication`: (`AgentAuthentication` | null) Auth schemes/credentials needed.
-    *   `defaultInputModes`: (string[]) Default supported input types (e.g., "text", "file").
-    *   `defaultOutputModes`: (string[]) Default supported output types.
-    *   `skills`: (`AgentSkill[]`) List of specific capabilities.
-*   **`AgentCapabilities`:**
-    *   `streaming`: (boolean) Supports `tasks/sendSubscribe`.
-    *   `pushNotifications`: (boolean) Supports `tasks/pushNotification/set|get`.
-    *   `stateTransitionHistory`: (boolean) Supports providing detailed history.
-*   **`AgentSkill`:**
-    *   `id`: (string) Unique skill ID.
-    *   `name`: (string) Skill name.
-    *   `description`: (string | null) Skill description.
-    *   `tags`: (string[] | null) Keywords.
-    *   `examples`: (string[] | null) Usage examples.
-    *   `inputModes`: (string[] | null) Overrides default inputs for this skill.
-    *   `outputModes`: (string[] | null) Overrides default outputs for this skill.
-*   **`Task`:** Represents a unit of work processed by an agent.
-    *   `id`: (string) Unique task identifier.
-    *   `sessionId`: (string | null) Groups related tasks.
-    *   `status`: (`TaskStatus`) Current state and associated message.
-    *   `artifacts`: (`Artifact[]` | null) Outputs generated by the task.
-    *   `history`: (`Message[]` | null) (Optional) History of messages exchanged for this task (if requested via `historyLength`).
-    *   `metadata`: (object | null) Additional task metadata.
-*   **`TaskStatus`:**
-    *   `state`: (`TaskState`) Current lifecycle state (enum).
-    *   `message`: (`Message` | null) Message associated with this status (e.g., progress update, final response text, input prompt).
-    *   `timestamp`: (string) ISO 8601 timestamp of the status update.
-*   **`TaskState` (Enum):**
-    *   `submitted`: Task received, not yet started.
-    *   `working`: Task is actively being processed.
-    *   `input-required`: Agent requires further input from the user/client.
-    *   `completed`: Task finished successfully.
-    *   `canceled`: Task was canceled.
-    *   `failed`: Task failed due to an error.
-    *   `unknown`: State cannot be determined.
-*   **`Message`:** Communication unit between user and agent.
-    *   `role`: ("user" | "agent") Sender role.
-    *   `parts`: (`Part[]`) Content parts (text, file, data).
-    *   `metadata`: (object | null) Message-specific metadata.
-*   **`Part` (Union Type):** Represents a piece of content within a Message or Artifact.
-    *   **`TextPart`:**
-        *   `type`: "text"
-        *   `text`: (string) The textual content.
-    *   **`FilePart`:**
-        *   `type`: "file"
-        *   `file`: (`FileContent`) File details (bytes or URI).
-    *   **`DataPart`:**
-        *   `type`: "data"
-        *   `data`: (object) Structured JSON data (e.g., for forms).
-    *   `metadata`: (object | null) Optional metadata for the specific part.
-*   **`FileContent`:** Represents file data.
-    *   `name`: (string | null) Filename.
-    *   `mimeType`: (string | null) MIME type.
-    *   `bytes`: (string | null) Base64 encoded file content. *Mutually exclusive with `uri`.*
-    *   `uri`: (string | null) URI pointing to the file content. *Mutually exclusive with `bytes`.*
-*   **`Artifact`:** Output generated by a task.
-    *   `name`: (string | null) Artifact name.
-    *   `description`: (string | null) Artifact description.
-    *   `parts`: (`Part[]`) Content parts.
-    *   `index`: (integer, default 0) Order index, useful for streaming/updates.
-    *   `append`: (boolean | null) For streaming, indicates if content should append to artifact at the same index.
-    *   `lastChunk`: (boolean | null) For streaming, indicates the final chunk for this artifact.
-    *   `metadata`: (object | null) Artifact metadata.
-*   **`PushNotificationConfig`:** Configuration for push notifications.
-    *   `url`: (string) Endpoint URL for the agent to POST notifications to.
-    *   `token`: (string | null) Optional token for the agent to include.
-    *   `authentication`: (`AuthenticationInfo` | null) Auth details the agent needs to call the URL.
-*   **`TaskPushNotificationConfig`:** Associates a `PushNotificationConfig` with a task ID.
+* **`AgentCard`**：代理元数据，通常位于`/.well-known/agent.json`
+    * `name`：可读名称
+    * `description`：描述信息
+    * `url`：代理A2A服务端点
+    * `provider`：供应商信息
+    * `version`：代理版本
+    * `documentationUrl`：文档链接
+    * `capabilities`：支持功能（流式/推送等）
+    * `authentication`：认证方案
+    * `defaultInputModes`：默认输入类型（如"text"/"file"）
+    * `defaultOutputModes`：默认输出类型
+    * `skills`：具体能力列表
+* **`AgentCapabilities`**：
+    * `streaming`：支持`tasks/sendSubscribe`
+    * `pushNotifications`：支持推送通知
+    * `stateTransitionHistory`：支持状态历史记录
+* **`AgentSkill`**：
+    * `id`：技能唯一ID
+    * `name`：技能名称
+    * `description`：技能描述
+    * `tags`：关键词标签
+    * `examples`：使用示例
+    * `inputModes`：覆盖默认输入类型
+    * `outputModes`：覆盖默认输出类型
+* **`Task`**：代理处理的工作单元
+    * `id`：任务唯一标识
+    * `sessionId`：关联任务组ID
+    * `status`：当前状态信息
+    * `artifacts`：输出工件
+    * `history`：消息历史（通过`historyLength`请求时返回）
+    * `metadata`：任务元数据
+* **`TaskStatus`**：
+    * `state`：任务状态枚举
+    * `message`：状态关联消息（进度更新/最终响应等）
+    * `timestamp`：ISO 8601时间戳
+* **`TaskState`（枚举）**：
+    * `submitted`：已提交未启动
+    * `working`：处理中
+    * `input-required`：需要用户输入
+    * `completed`：成功完成
+    * `canceled`：已取消
+    * `failed`：执行失败
+    * `unknown`：未知状态
+* **`Message`**：用户与代理间通信单元
+    * `role`："user"或"agent"
+    * `parts`：内容部件（文本/文件/数据）
+    * `metadata`：消息元数据
+* **`Part`（联合类型）**：
+    * **`TextPart`**：
+        * `type`: "text"
+        * `text`: 文本内容
+    * **`FilePart`**：
+        * `type`: "file"
+        * `file`: 文件详情（字节或URI）
+    * **`DataPart`**：
+        * `type`: "data"
+        * `data`: 结构化JSON数据
+    * `metadata`：部件元数据
+* **`FileContent`**：文件数据
+    * `name`：文件名
+    * `mimeType`：MIME类型
+    * `bytes`：Base64编码内容（与`uri`互斥）
+    * `uri`：文件资源地址（与`bytes`互斥）
+* **`Artifact`**：任务输出
+    * `name`：工件名称
+    * `description`：描述信息
+    * `parts`：内容部件
+    * `index`：排序索引
+    * `append`：流式处理时是否追加内容
+    * `lastChunk`：流式处理末位标识
+    * `metadata`：工件元数据
+* **`PushNotificationConfig`**：推送通知配置
+    * `url`：通知接收端点
+    * `token`：认证令牌
+    * `authentication`：调用端点所需认证信息
+* **`TaskPushNotificationConfig`**：任务与推送配置关联
 
-### 2.3. A2A RPC Methods
+### 2.3 A2A RPC方法
 
-*   **`tasks/send`:** (Request/Response)
-    *   Sends a message to initiate or continue a task.
-    *   `params`: `TaskSendParams` (includes `id`, `sessionId`, `message`, optionally `pushNotification`, `historyLength`, `metadata`).
-    *   `result`: `Task` (final state after synchronous processing).
-*   **`tasks/sendSubscribe`:** (Request/Stream)
-    *   Sends a message and subscribes to real-time updates via SSE.
-    *   `params`: `TaskSendParams`.
-    *   `result` (stream events): `TaskStatusUpdateEvent` or `TaskArtifactUpdateEvent`. Final event has `final: true`.
-*   **`tasks/get`:** (Request/Response)
-    *   Retrieves the current state of a task.
-    *   `params`: `TaskQueryParams` (includes `id`, optionally `historyLength`).
-    *   `result`: `Task`.
-*   **`tasks/cancel`:** (Request/Response)
-    *   Requests cancellation of a running task.
-    *   `params`: `TaskIdParams` (includes `id`).
-    *   `result`: `Task` (updated state, likely 'canceled') or error if not cancelable.
-*   **`tasks/pushNotification/set`:** (Request/Response)
-    *   Sets or updates the push notification configuration for a task.
-    *   `params`: `TaskPushNotificationConfig`.
-    *   `result`: `TaskPushNotificationConfig` (confirmed config).
-*   **`tasks/pushNotification/get`:** (Request/Response)
-    *   Retrieves the current push notification configuration for a task.
-    *   `params`: `TaskIdParams`.
-    *   `result`: `TaskPushNotificationConfig`.
-*   **`tasks/resubscribe`:** (Request/Stream)
-    *   Resubscribes to task updates after a connection interruption (SSE).
-    *   `params`: `TaskQueryParams`.
-    *   `result` (stream events): `TaskStatusUpdateEvent` or `TaskArtifactUpdateEvent`.
+* **`tasks/send`**（请求/响应）：
+    * 发送消息启动/继续任务
+    * 参数：`TaskSendParams`
+    * 结果：`Task`（同步处理后状态）
+* **`tasks/sendSubscribe`**（请求/流）：
+    * 发送消息并订阅SSE实时更新
+    * 参数：`TaskSendParams`
+    * 流事件：`TaskStatusUpdateEvent`或`TaskArtifactUpdateEvent`
+* **`tasks/get`**（请求/响应）：
+    * 获取任务当前状态
+    * 参数：`TaskQueryParams`
+    * 结果：`Task`
+* **`tasks/cancel`**（请求/响应）：
+    * 请求取消任务
+    * 参数：`TaskIdParams`
+    * 结果：更新后的`Task`
+* **`tasks/pushNotification/set`**（请求/响应）：
+    * 设置任务推送配置
+    * 参数：`TaskPushNotificationConfig`
+    * 结果：确认的配置
+* **`tasks/pushNotification/get`**（请求/响应）：
+    * 获取任务推送配置
+    * 参数：`TaskIdParams`
+    * 结果：当前配置
+* **`tasks/resubscribe`**（请求/流）：
+    * 断线后重新订阅任务更新
+    * 参数：`TaskQueryParams`
+    * 流事件：状态/工件更新事件
 
-### 2.4. Streaming Update Events (Result of `tasks/sendSubscribe` or `tasks/resubscribe`)
+### 2.4 流式更新事件
 
-*   **`TaskStatusUpdateEvent`:** Signals a change in task status.
-    *   `id`: (string) Task ID.
-    *   `status`: (`TaskStatus`) The new status object.
-    *   `final`: (boolean) True if this is the terminal update for the task.
-    *   `metadata`: (object | null) Event metadata.
-*   **`TaskArtifactUpdateEvent`:** Signals a new or updated artifact.
-    *   `id`: (string) Task ID.
-    *   `artifact`: (`Artifact`) The artifact data.
-    *   `final`: (boolean, usually false for artifacts) Can signal end concurrently with status.
-    *   `metadata`: (object | null) Event metadata.
+* **`TaskStatusUpdateEvent`**：任务状态变更
+    * `id`：任务ID
+    * `status`：新状态对象
+    * `final`：是否为最终事件
+* **`TaskArtifactUpdateEvent`**：工件更新
+    * `id`：任务ID
+    * `artifact`：工件数据
+    * `final`：结束标识
 
-### 2.5. Standard Error Codes
+### 2.5 标准错误码
 
-*   `-32700`: `JSONParseError` - Invalid JSON payload.
-*   `-32600`: `InvalidRequestError` - Invalid JSON-RPC request object.
-*   `-32601`: `MethodNotFoundError` - Method does not exist.
-*   `-32602`: `InvalidParamsError` - Invalid method parameters.
-*   `-32603`: `InternalError` - Internal server error.
+* `-32700`：JSON解析错误
+* `-32600`：无效请求
+* `-32601`：方法不存在
+* `-32602`：参数错误
+* `-32603`：内部错误
 
-### 2.6. A2A Specific Error Codes
+### 2.6 A2A专用错误码
 
-*   `-32001`: `TaskNotFoundError` - Specified task ID not found.
-*   `-32002`: `TaskNotCancelableError` - Task is in a final state and cannot be canceled.
-*   `-32003`: `PushNotificationNotSupportedError` - Agent does not support push notifications.
-*   `-32004`: `UnsupportedOperationError` - The requested operation is not supported.
-*   `-32005`: `ContentTypeNotSupportedError` - Mismatch in supported content types.
+* `-32001`：任务不存在
+* `-32002`：任务不可取消
+* `-32003`：不支持推送通知
+* `-32004`：不支持的操作
+* `-32005`：内容类型不支持
 
-## 3. Core Concepts
+## 3. 核心概念
 
-*   **Agent Discovery:** Clients find agents and their capabilities by fetching the `AgentCard` JSON, typically from `/.well-known/agent.json`.
-*   **Task Lifecycle:** Tasks progress through states defined in `TaskState` (submitted -> working -> [input-required] -> completed/canceled/failed).
-*   **Communication:** Uses `Message` objects containing `Part`s (text, file, data). Task outputs are represented as `Artifact`s, also containing `Part`s.
-*   **Streaming:** Long-running tasks can provide real-time updates using SSE via `tasks/sendSubscribe`. Updates are sent as `TaskStatusUpdateEvent` and `TaskArtifactUpdateEvent`.
-*   **Push Notifications:** Agents can proactively notify clients about task updates using webhook URLs provided via `tasks/pushNotification/set`. Authentication mechanisms (e.g., Bearer tokens via JWT signed with keys from agent's JWKS endpoint) are supported.
-*   **Authentication:** Defined in `AgentCard` and `PushNotificationConfig`. Can involve various schemes (e.g., API keys, OAuth, JWT). Samples use JWT for push notifications.
-*   **Forms:** Structured data can be requested and submitted using `DataPart` within Messages/Artifacts (demonstrated in ADK sample).
+* **代理发现**：通过获取`/.well-known/agent.json`中的`AgentCard`发现代理能力
+* **任务生命周期**：状态流转（submitted → working → [input-required] → completed/canceled/failed）
+* **通信方式**：使用包含`Part`的`Message`对象，任务输出为`Artifact`
+* **流式处理**：通过SSE实现长任务实时更新
+* **推送通知**：通过webhook实现主动通知，支持JWT等认证方式
+* **认证机制**：支持API Key/OAuth/JWT等多种方式
+* **表单处理**：使用`DataPart`处理结构化数据（ADK示例演示）
 
-## 4. Implementations & Samples
+## 4. 实现与示例
 
-### 4.1. Common Libraries
+### 4.1 通用库
 
-*   **Python (`samples/python/common`)**:
-    *   `client/`: `A2AClient` for making requests, `A2ACardResolver` for discovery.
-    *   `server/`: `A2AServer` (Starlette-based), `TaskManager` base class, `InMemoryTaskManager`.
-    *   `types.py`: Pydantic models mirroring the JSON schema.
-    *   `utils/`: Helpers for push notification auth (JWT signing/verification, JWKS endpoint).
-*   **JavaScript/TypeScript (`samples/js/src`)**:
-    *   `client/`: `A2AClient` implementation using `fetch`.
-    *   `server/`: `A2AServer` (Express-based), `TaskStore` interface, `InMemoryTaskStore`, `FileStore`.
-    *   `schema.ts`: TypeScript interfaces matching the JSON schema.
-    *   `handler.ts`, `error.ts`, `utils.ts`: Support code for the server.
+* **Python（`samples/python/common`）**：
+    * 客户端：`A2AClient`和`A2ACardResolver`
+    * 服务端：Starlette基础的`A2AServer`和`TaskManager`
+    * 类型定义：Pydantic模型
+    * 工具类：JWT签名/验证工具
+* **JavaScript/TypeScript（`samples/js/src`）**：
+    * 客户端：基于fetch的`A2AClient`
+    * 服务端：Express基础的`A2AServer`和任务存储
+    * 类型定义：接口匹配JSON Schema
 
-### 4.2. Python Samples
+### 4.2 Python示例
 
-*   **Location:** `samples/python/agents/` & `samples/python/hosts/`
-*   **Setup:** Uses `uv` and `pyproject.toml`. Requires Python >= 3.12/3.13. API keys via `.env`.
-*   **Agents:**
-    *   **LangGraph (`agents/langgraph`)**: Currency conversion agent. Demonstrates tool use, multi-turn (`input-required`), and **streaming** (`tasks/sendSubscribe`).
-    *   **CrewAI (`agents/crewai`)**: Image generation agent. Demonstrates multi-turn and handling **file artifacts** (images).
-    *   **Google ADK (`agents/google_adk`)**: Expense reimbursement agent. Demonstrates multi-turn and handling **forms** using `DataPart`.
-*   **Hosts:**
-    *   **CLI (`hosts/cli`)**: Simple command-line client to interact with any A2A agent. Supports streaming and optional push notification listening.
-    *   **Multi-Agent Orchestrator (`hosts/multiagent`)**: An ADK-based "Host Agent" that manages connections (`RemoteAgentConnections`) to other A2A agents and delegates tasks based on instructions.
+* **位置**：`samples/python/agents/`和`samples/python/hosts/`
+* **代理示例**：
+    * **LangGraph**：货币转换代理（演示工具调用、多轮对话和流式）
+    * **CrewAI**：图像生成代理（处理文件工件）
+    * **Google ADK**：报销代理（处理表单）
+* **宿主应用**：
+    * **CLI**：命令行客户端支持流式和推送
+    * **多代理协调器**：基于ADK的任务委派系统
 
-### 4.3. JavaScript/TypeScript Samples
+### 4.3 JavaScript/TypeScript示例
 
-*   **Location:** `samples/js/`
-*   **Setup:** Uses `npm`/`pnpm`, `tsx`, `tsconfig.json`. Requires Node.js >= 18. API keys via environment variables. Framework: **Genkit**.
-*   **Agents (`src/agents/`)**:
-    *   **Movie Agent (`movie-agent`)**: Uses TMDB API via Genkit tools to answer movie questions. Demonstrates tool use and multi-turn (`AWAITING_USER_INPUT` mapped to `input-required`).
-    *   **Coder Agent (`coder`)**: Generates code files. Demonstrates producing multiple **file artifacts** via streaming updates. Uses custom Genkit format (`code-format.ts`).
-*   **Hosts:**
-    *   **CLI (`src/cli.ts`)**: Command-line client for interacting with JS agents.
+* **位置**：`samples/js/`
+* **代理示例**：
+    * **电影代理**：通过TMDB API查询电影信息
+    * **代码生成代理**：生成代码文件（流式输出）
+* **宿主应用**：Genkit框架的CLI客户端
 
-### 4.4. Demo Application (`demo/`)
+### 4.4 演示应用（`demo/`）
 
-*   **UI (`demo/ui`)**: Web application built with **Mesop**.
-    *   Visualizes conversations with multiple agents via the host orchestrator.
-    *   Renders text, images, forms.
-    *   Allows dynamic agent registration via URL.
-    *   Provides views for task list and event logs.
-*   **Service (`demo/ui/service`)**: Backend service for the Mesop UI.
-    *   `server/`: Manages conversations, routes messages, interfaces with the host agent (`ADKHostManager` or `InMemoryFakeAgentManager`).
-    *   `client/`: Client used by the UI to talk to its *own* backend service.
+* **UI**：Mesop构建的Web界面
+    * 可视化多代理对话
+    * 支持动态代理注册
+    * 任务列表和事件日志视图
+* **服务端**：
+    * 管理会话、路由消息
+    * 对接宿主代理
 
-## 5. Development & Setup
+## 5. 开发与配置
 
-*   **Prerequisites:** Python (>=3.12 or 3.13), Node.js (>=18), `uv` (for Python), `npm`/`pnpm` (for JS).
-*   **API Keys:** Required for LLM access (e.g., `GOOGLE_API_KEY`, `TMDB_API_KEY`), typically set via `.env` files or environment variables.
-*   **Running Samples:** Generally involves running an agent server (`uv run ...` or `npm run ...`) and then a host client/app (e.g., `uv run hosts/cli --agent <agent_url>`).
+* **环境要求**：Python≥3.12/3.13、Node.js≥18、uv/npm/pnpm
+* **API密钥**：通过.env文件设置LLM访问密钥
+* **运行示例**：启动代理服务后运行宿主客户端
 
-## 6. Contribution
+## 6. 贡献指南
 
-*   See `CONTRIBUTING.md`.
-*   Github discussion available as the primary means of communication.
-*   Github issues for bugs and feature requests.
-*   Google Form for private feedback.
+* 参见`CONTRIBUTING.md`
+* 通过Github讨论区交流
+* Github Issues提交问题
+* Google Form接收私有反馈

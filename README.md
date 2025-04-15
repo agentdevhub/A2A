@@ -47,7 +47,7 @@ Agent2Agent（A2A）协议促进独立AI智能体间的通信，核心概念如�
 5. **任务完成：** 任务最终进入终止状态（`completed`/`failed`/`canceled`）
 
 ### **快速入门**
-* 📚 阅读[技术文档](https://google.github.io/A2A/#/documentation)了解协议能力
+* 📚 阅读[技术文档](https://a2a.agentdevhub.com/#/documentation)了解协议能力
 * 📝 查看协议的[JSON规范](/specification)
 * 🎬 使用[示例代码](/samples)体验A2A
    * A2A客户端/服务端示例（[Python](/samples/python/common)、[JS](/samples/js/src)）
@@ -59,10 +59,10 @@ Agent2Agent（A2A）协议促进独立AI智能体间的通信，核心概念如�
    * [LangGraph](/samples/python/agents/langgraph/README.md)
    * [Genkit](/samples/js/src/agents/README.md)
 * 📑 查阅关键主题
-   * [A2A与MCP](https://google.github.io/A2A/#/topics/a2a_and_mcp.md)
-   * [智能体发现机制](https://google.github.io/A2A/#/topics/agent_discovery.md)
-   * [企业级支持](https://google.github.io/A2A/#/topics/enterprise_ready.md)
-   * [推送通知详解](https://google.github.io/A2A/#/topics/push_notifications.md)
+   * [A2A与MCP](https://a2a.agentdevhub.com/#/topics/a2a_and_mcp.md)
+   * [智能体发现机制](https://a2a.agentdevhub.com/#/topics/agent_discovery.md)
+   * [企业级支持](https://a2a.agentdevhub.com/#/topics/enterprise_ready.md)
+   * [推送通知详解](https://a2a.agentdevhub.com/#/topics/push_notifications.md)
 
 ### **贡献指南**
 欢迎贡献！请阅读[贡献指南](CONTRIBUTING.md)开始参与。\
