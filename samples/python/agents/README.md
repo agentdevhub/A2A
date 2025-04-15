@@ -1,19 +1,16 @@
-## Sample Agents
+## 示例智能体
 
-All the agents in this directory are samples built on different frameworks highlighting different capabilities. Each agent runs as a standalone A2A server. 
+本目录下的所有智能体均为基于不同框架构建的示例，展示了不同的技术能力。每个智能体均可作为独立的 A2A 服务器运行。
 
-Each agent can be run as its own A2A server with the instructions on its README. By default, each will run on a separate port on localhost (you can use command line arguments to override).
+每个智能体均可按照其 README 中的说明作为独立的 A2A 服务器运行。默认情况下，各智能体将在本地主机的不同端口上运行（可通过命令行参数覆盖默认设置）。
 
-To interact with the servers, use an A2AClient in a host app (such as the CLI). See [Host Apps](/samples/python/hosts/README.md) for details.
+要与此类服务器交互，请在宿主应用（如 CLI）中使用 A2AClient。详见[宿主应用](/samples/python/hosts/README.md)。
 
 * [**Google ADK**](/samples/python/agents/google_adk/README.md)  
-Sample agent to (mock) fill out expense reports. Showcases multi-turn interactions and returning/replying to webforms through A2A.
+用于（模拟）填写费用报销单的示例智能体。展示了多轮交互能力以及通过 A2A 返回/回复网页表单的功能。
 
 * [**LangGraph**](/samples/python/agents/langgraph/README.md)  
-Sample agent which can convert currency using tools. Showcases multi-turn interactions, tool usage, and streaming updates. 
+具备货币转换能力的示例智能体。展示了多轮交互、工具调用和流式更新功能。
 
 * [**CrewAI**](/samples/python/agents/crewai/README.md)  
-Sample agent which can generate images. Showcases multi-turn interactions and sending images through A2A.
-
-
-
+支持图像生成的示例智能体。展示了多轮交互能力以及通过 A2A 发送图像的功能。

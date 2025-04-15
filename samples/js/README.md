@@ -1,24 +1,12 @@
-# JavaScript Samples
+# JavaScript 示例代码
 
-The provided samples are built using [Genkit](https://genkit.dev/) using the Gemini API.
+以下示例代码均基于 [Genkit](https://genkit.dev/) 框架构建，并使用了 Gemini API。
 
-## Agents
+## 智能体案例
 
-- [Movie Agent](src/agents/movie-agent/README.md): Uses TMDB API to search for movie information and answer questions.
-- [Coder Agent](src/agents/coder/README.md): Generates full code files as artifacts.
+- [Movie Agent](src/agents/movie-agent/README.md): 使用 TMDB API 实现电影信息搜索和问答功能
+- [Coder Agent](src/agents/coder/README.md): 支持生成完整代码文件作为产出物
 
-## Testing the Agents
+## 测试智能体
 
-First, follow the instructions in the agent's README file, then run `npx tsx ./cli.ts` to start up a command-line client to talk to the agents. Example:
-
-```bash
-export GEMINI_API_KEY=<your_api_key>
-npm run agents:coder
-
-# in a separate terminal
-npm run a2a:cli
-```
----
-**NOTE:** 
-This is sample code and not production-quality libraries.
----
+测试前请先查阅对应智能体 README 文件中的指引，随后执行 `npx tsx ./cli.ts` 命令启动命令行客户端进行交互。示例操作：

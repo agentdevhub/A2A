@@ -1,30 +1,15 @@
 ## ADK Agent
 
-This sample uses the Agent Development Kit (ADK) to create a simple "Expense Reimbursement" agent that is hosted as an A2A server.
+本示例使用 Agent Development Kit (ADK) 创建了一个简单的"Expense Reimbursement"代理，该代理托管为A2A服务器。
 
-This agent takes text requests from the client and, if any details are missing, returns a webform for the client (or its user) to fill out. After the client fills out the form, the agent will complete the task.
+该代理接收来自客户端的文本请求，如果缺少任何详细信息，则会返回一个网页表单供客户端（或其用户）填写。在客户端完成表单填写后，代理将执行后续操作。
 
-## Prerequisites
+## 前置条件
 
-- Python 3.9 or higher
+- Python 3.9 或更高版本
 - UV
-- Access to an LLM and API Key
+- 能够访问LLM并拥有API密钥
 
+## 运行示例
 
-## Running the Sample
-
-1. Navigate to the samples directory:
-    ```bash
-    cd samples/python/agents/google_adk
-    ```
-2. Create an environment file with your API key:
-
-   ```bash
-   echo "GOOGLE_API_KEY=your_api_key_here" > .env
-   ```
-
-4. Run an agent:
-    ```bash
-    uv run .
-    ```
-5. Run one of the [client apps](/samples/python/hosts/README.md)
+1. 进入示例目录：

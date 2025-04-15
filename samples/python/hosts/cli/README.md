@@ -1,24 +1,15 @@
 ## CLI
 
-The CLI is a small host application that demonstrates the capabilities of an A2AClient. It supports reading a server's AgentCard and text-based collaboration with a remote agent. All content received from the A2A server is printed to the console. 
+CLI 是一个小型宿主应用程序，用于演示 A2AClient 的核心功能。它支持读取服务器的 AgentCard 并与远端 Agent 进行基于文本的协作。所有从 A2A 服务器接收的内容都会输出至控制台。
 
-The client will use streaming if the server supports it.
+若服务器支持流式传输，客户端将自动启用流式传输功能。
 
-## Prerequisites
+## 前提条件
 
-- Python 3.13 or higher
+- Python 3.13 或更高版本
 - UV
-- A running A2A server
+- 正在运行的 A2A 服务器
 
-## Running the CLI
+## 运行 CLI
 
-1. Navigate to the samples directory:
-    ```bash
-    cd samples/python
-    ```
-2. Run the example client
-    ```
-    uv run hosts/cli --agent [url-of-your-a2a-server]
-    ```
-
-   for example `--agent http://localhost:10000`. More command line options are documented in the source code. 
+1. 进入示例目录：
